@@ -3,6 +3,8 @@ function doGet(){return HtmlService.createHtmlOutputFromFile('Index').setTitle('
 function registerGuest(d){
  if(!d || !d.id || !d.artist || !d.contact || !d.email || !Array.isArray(d.events) || !d.events.length) throw new Error('必須情報を確認してください。');
  if(!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(d.email))throw new Error('メールアドレスを確認してください。');
+ if(!d.emailConfirm || d.email.trim()!==d.emailConfirm.trim())throw new Error('メールアドレスが一致していません。');
+ d.email=d.email.trim();
  const requestId=d.id;
  const allowed=['osaka','fukuoka','sendai','yokohama'];
  if(d.events.some(e=>!allowed.includes(e.venue)||!Number.isInteger(e.mealCount)||e.mealCount<0||!['1食希望','不要'].includes(e.mealType)))throw new Error('会場・食数を確認してください。');
