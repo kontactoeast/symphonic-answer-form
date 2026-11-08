@@ -25,7 +25,9 @@ function registerGuest(d){
  const food=sheet('当日手配',['登録ID','会場','アーティスト','会場入り予定時刻','食事種別','食数']);
  // 再試行時は同じ登録IDの途中保存を除去して再作成。
  [people,food].forEach(s=>{const values=s.getDataRange().getValues();for(let i=values.length-1;i>0;i--)if(values[i][0]===d.id)s.deleteRow(i+1);});
- const pr=[],fr=[];d.events.forEach(e=>{pr.push([d.id,e.venueName,d.artist,d.artist,'出演者']);(d.members||[]).filter(m=>m.venues.includes(e.venue)).forEach(m=>pr.push([d.id,e.venueName,d.artist,m.name,m.role]));fr.push([d.id,e.venueName,d.artist,e.arrival,e.mealType,e.mealCount]);});
+ const pr=[],fr=[];d.events.forEach(e=>{for (const name of artistNames_(d)) {
+  pr.push([d.id,e.venueName,d.artist,name,'出演者']);
+ }(d.members||[]).filter(m=>m.venues.includes(e.venue)).forEach(m=>pr.push([d.id,e.venueName,d.artist,m.name,m.role]));fr.push([d.id,e.venueName,d.artist,e.arrival,e.mealType,e.mealCount]);});
  add(people,pr);add(food,fr);basic.getRange(idx,13).setValue('完了');SpreadsheetApp.flush();return finishRegistration_(basic,idx,d);
  }finally{lock.releaseLock();}
 }
@@ -42,7 +44,7 @@ function finishRegistration_(sheet,row,d){
  }catch(err){sheet.getRange(row,17).setValue('送信未確認：制作確認要');return {ok:true,id:d.id,emailSent:false};}
 }
 function registrationBody_(d){
- const lines=[d.contact+' 様','','ご登録ありがとうございました。以下の内容で承りました。','登録ID：'+d.id,'','【基本情報】','アーティスト：'+d.artist,'ご担当者：'+d.contact,'携帯電話：'+d.phone,'メール：'+d.email,'当日の連絡先：'+d.dayContact,'','【楽屋口入館者】'];
+ const lines=[d.contact+' 様','','ご登録ありがとうございました。以下の内容で承りました。','登録ID：'+d.id,'','【基本情報】','アーティスト：'+artistNames_(d).join('、'),'ご担当者：'+d.contact,'携帯電話：'+d.phone,'メール：'+d.email,'当日の連絡先：'+d.dayContact,'','【楽屋口入館者】'];
  (d.members||[]).forEach(m=>lines.push(m.name+'／'+m.role+'／'+m.venues.map(v=>({osaka:'大阪',fukuoka:'福岡',sendai:'仙台',yokohama:'横浜'}[v]||v)).join('・')));
  if(!(d.members||[]).length)lines.push('帯同者なし');
  (d.events||[]).forEach(e=>{lines.push('','【'+e.venueName+'】','会場入り予定時刻：'+e.arrival,'お食事：'+e.mealType+'／'+e.mealCount+'食');});
@@ -51,3 +53,8 @@ function registrationBody_(d){
 }
 // エディターで一度実行し、メール送信権限を承認（メールは送信しません）。
 function authorizeMail(){return MailApp.getRemainingDailyQuota();}
+
+function artistNames_(d) {
+ const additional = Array.isArray(d.additionalArtists) ? d.additionalArtists : [];
+ return [d.artist, ...additional].filter(name => typeof name === 'string').map(name => name.trim()).filter(Boolean);
+}
